@@ -94,8 +94,8 @@
   <header>
     <div class="hwrap">
       <div class="brand">
-        <img class="logo-dark" src="/static/logo-dark.png" alt="Egoz Systems">
-        <img class="logo-light" src="/static/logo-light.png" alt="Egoz Systems">
+        <img class="logo-dark" src="logo-dark.png" alt="Egoz Systems">
+        <img class="logo-light" src="logo-light.png" alt="Egoz Systems">
         <div>
           <h1>אקרוניס</h1>
           <p>לקוחות, רישיונות, מחיר ואחסון בשימוש</p>
@@ -212,7 +212,7 @@
     async function load(refresh) {
       el("meta").textContent = "טוען…";
       el("wrap").innerHTML = '<div class="empty">טוען לקוחות מאקרוניס…</div>';
-      const res = await fetch("/api/acronis" + (refresh ? "?refresh=true" : ""));
+      const res = await fetch("data.json" + (refresh ? "?t=" + Date.now() : ""), { cache: "no-store" });
       if (!res.ok) {
         const msg = await res.text();
         el("meta").textContent = "שגיאה";
