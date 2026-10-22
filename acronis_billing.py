@@ -8,6 +8,8 @@ from __future__ import annotations
 
 GB = 1024 ** 3
 STORAGE_PER_GB = 0.30
+# Billing steps are 500 decimal GB. 3.52 TiB is about 3,870 GB, which rounds up to 4 TB.
+BILL_STEP = 500 * 10**9
 
 # offering-item `name` -> product key. Packs and shared seats are not in the price list.
 COUNT_NAMES = {
@@ -45,6 +47,12 @@ PRODUCTS = (
 
 def _num(usage: dict) -> float:
     return float(usage.get("absolute_value") or usage.get("value") or 0)
+
+
+def billed_bytes(used: int) -> int:
+    if used <= 0:
+        return 0
+    return ((used + BILL_STEP - 1) // BILL_STEP) * BILL_STEP
 
 
 def bill(usages: list[dict]) -> dict:
@@ -95,7 +103,8 @@ def bill(usages: list[dict]) -> dict:
             "storage_bytes": other,
             "price": 0,
         })
-    storage_price = round((total_bytes / GB) * STORAGE_PER_GB, 2)
+    charged = billed_bytes(total_bytes)
+    storage_price = round((charged / 10**9) * STORAGE_PER_GB, 2)
     price = round(price + storage_price, 2)
     lines.append({
         "key": "storage",
@@ -103,11 +112,13 @@ def bill(usages: list[dict]) -> dict:
         "qty": None,
         "unit": STORAGE_PER_GB,
         "storage_bytes": total_bytes,
+        "billed_bytes": charged,
         "price": storage_price,
     })
     return {
         "counts": counts,
         "storage_bytes": total_bytes,
+        "billed_bytes": charged,
         "price": price,
         "lines": lines,
     }
@@ -132,12 +143,17 @@ def _demo() -> None:
         "servers": 1, "vms": 2, "workstations": 0, "edr": 4, "m365": 3, "email": 2,
     }, row["counts"]
     assert row["storage_bytes"] == 20 * gb
+    assert row["billed_bytes"] == 500 * 10**9
     assert row["lines"][0]["storage_bytes"] == 10 * gb
     assert row["lines"][1]["storage_bytes"] == 5 * gb
     other = next(l for l in row["lines"] if l["key"] == "other")
     assert other["storage_bytes"] == 5 * gb and other["price"] == 0
-    # 150 + 100 + 35 + 31.68 + 19.84 + 6.00. Unassigned storage is not priced again.
-    assert row["price"] == 342.52, row["price"]
+    # 150 + 100 + 35 + 31.68 + 19.84 + 500 GB * 0.30
+    assert row["price"] == 486.52, row["price"]
+    used = int(3.52 * (1024 ** 4))
+    assert billed_bytes(used) == 4 * 10**12
+    assert billed_bytes(0) == 0
+    assert billed_bytes(500 * 10**9) == 500 * 10**9
     print("ok", row["price"])
 
 

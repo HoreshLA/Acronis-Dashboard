@@ -122,7 +122,7 @@
       </form>
     </section>
     <section class="panel" id="app" hidden>
-      <p class="hint">המספרים נמשכים מאקרוניס כל 6 שעות. המחיר הוא לפי המחירון של אגוז, כולל ₪0.30 ל-GB אחסון ענן.</p>
+      <p class="hint">המספרים נמשכים מאקרוניס כל 6 שעות. האחסון מחויב בקפיצות של 500 GB כלפי מעלה, ₪0.30 לכל GB מחויב.</p>
       <input type="search" id="q" placeholder="חיפוש לקוח…" autocomplete="off">
       <div class="wrap" id="wrap"><div class="empty">טוען לקוחות מאקרוניס…</div></div>
     </section>
@@ -158,6 +158,15 @@
         : gb.toLocaleString("he-IL", { maximumFractionDigits: gb < 10 ? 2 : 1 }) + " GB";
       return ltr(text);
     }
+    function billed(bytes) {
+      if (!bytes) return "—";
+      const gb = bytes / 1e9;
+      const tb = gb / 1000;
+      const text = tb >= 1
+        ? tb.toLocaleString("he-IL", { maximumFractionDigits: 1 }) + " TB"
+        : gb.toLocaleString("he-IL", { maximumFractionDigits: 0 }) + " GB";
+      return ltr(text);
+    }
 
     function render() {
       const q = (el("q").value || "").trim();
@@ -179,10 +188,11 @@
         return `<tr class="${r.price ? "" : "zero"}">
           <td class="name"><button class="plus" type="button" data-i="${i}" aria-label="פירוט">+</button>${esc(r.name)}</td>
           ${counts}
-          <td class="money split price">${money(r.price)}</td>
           <td class="split">${storage(r.storage_bytes)}</td>
+          <td class="${r.billed_bytes ? "col" : "col dim"}">${billed(r.billed_bytes)}</td>
+          <td class="money split price">${money(r.price)}</td>
         </tr>
-        <tr class="detail" id="d-${i}" hidden><td colspan="9">
+        <tr class="detail" id="d-${i}" hidden><td colspan="10">
           <table class="subtbl">
             <thead><tr><th>מוצר</th><th>כמות</th><th>אחסון</th><th>מחיר יחידה</th><th>סה״כ</th></tr></thead>
             <tbody>${lines}</tbody>
@@ -192,22 +202,24 @@
       const tot = KEYS.map(k => list.reduce((s, r) => s + (r.counts[k] || 0), 0));
       const price = list.reduce((s, r) => s + r.price, 0);
       const bytes = list.reduce((s, r) => s + r.storage_bytes, 0);
+      const charged = list.reduce((s, r) => s + (r.billed_bytes || 0), 0);
       el("wrap").innerHTML = `<table class="bill">
         <thead>
           <tr>
             <th class="name" rowspan="2">לקוח</th>
             <th class="grp split" colspan="6">מוצר</th>
+            <th class="grp split" colspan="2">אחסון</th>
             <th class="split price" rowspan="2">מחיר</th>
-            <th class="split" rowspan="2">אחסון</th>
           </tr>
-          <tr>${head}</tr>
+          <tr>${head}<th class="split">שימוש</th><th class="col">חיוב</th></tr>
         </thead>
         <tbody>${body}</tbody>
         <tfoot><tr>
           <td class="name">סה״כ (${list.length})</td>
           ${tot.map((n, i) => `<td class="${i ? "col" : "split"}">${n}</td>`).join("")}
-          <td class="money split price">${money(price)}</td>
           <td class="split">${storage(bytes)}</td>
+          <td class="col">${billed(charged)}</td>
+          <td class="money split price">${money(price)}</td>
         </tr></tfoot>
       </table>`;
       el("wrap").querySelectorAll(".plus").forEach(btn => {
