@@ -8,20 +8,20 @@
     :root {
       --bg:#0c1424; --card:#152033; --txt:#e7eef8; --muted:#93a4bd;
       --line:#4a6282; --split:#9eb2cc; --head:#1b2a42; --band:#243656;
-      --hover:#1c2d48; --detail:#10192a; --ok:#34d399; --input:#0e1828;
+      --hover:#1c2d48; --detail:#10192a; --ok:#34d399; --bad:#f05252; --input:#0e1828;
       --shadow:0 10px 28px rgba(0,0,0,.28);
     }
     :root[data-theme="light"] {
       --bg:#e7edf5; --card:#ffffff; --txt:#172842; --muted:#52637c;
       --line:#7d93b0; --split:#3e5878; --head:#f3f6fb; --band:#e3edf8;
-      --hover:#eef3f9; --detail:#f7f9fc; --ok:#047857; --input:#ffffff;
+      --hover:#eef3f9; --detail:#f7f9fc; --ok:#047857; --bad:#b91c1c; --input:#ffffff;
       --shadow:0 8px 24px rgba(23,40,66,.08);
     }
     @media (prefers-color-scheme: light) {
       :root:not([data-theme="dark"]) {
         --bg:#e7edf5; --card:#ffffff; --txt:#172842; --muted:#52637c;
         --line:#7d93b0; --split:#3e5878; --head:#f3f6fb; --band:#e3edf8;
-        --hover:#eef3f9; --detail:#f7f9fc; --ok:#047857; --input:#ffffff;
+        --hover:#eef3f9; --detail:#f7f9fc; --ok:#047857; --bad:#b91c1c; --input:#ffffff;
         --shadow:0 8px 24px rgba(23,40,66,.08);
       }
     }
@@ -52,9 +52,12 @@
     .panel { background:var(--card); border:1px solid var(--split); border-radius:14px;
       padding:16px 18px 8px; box-shadow:var(--shadow); }
     .hint { color:var(--muted); font-size:13px; margin:0 0 12px; }
-    input[type=search] { width:min(280px,100%); background:var(--input); color:var(--txt);
+    input[type=search], input[type=password] { width:min(280px,100%); background:var(--input); color:var(--txt);
       border:1px solid var(--split); border-radius:8px; padding:8px 12px; font:inherit; margin-bottom:12px; }
-    input[type=search]:focus { outline:2px solid var(--split); outline-offset:1px; }
+    input:focus { outline:2px solid var(--split); outline-offset:1px; }
+    .gate { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .gate input { margin:0; }
+    .err { color:var(--bad); }
     .wrap { overflow-x:auto; }
     table.bill { width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums; }
     table.bill th, table.bill td { padding:11px 16px; border-bottom:1px solid var(--line);
@@ -102,7 +105,7 @@
         </div>
       </div>
       <div class="controls">
-        <span class="meta" id="meta">טוען…</span>
+        <span class="meta" id="meta"></span>
         <button class="btn" id="refresh" type="button" title="רענון">↻</button>
         <button class="btn" id="theme" type="button" title="מצב בהיר או כהה">◐</button>
       </div>
@@ -110,8 +113,16 @@
   </header>
 
   <main>
-    <section class="panel">
-      <p class="hint">השימוש באקרוניס מתעדכן אצלם כל כמה שעות. המחיר הוא לפי המחירון של אגוז, כולל ₪0.30 ל-GB אחסון ענן.</p>
+    <section class="panel" id="gate">
+      <form class="gate" id="gate-form">
+        <label for="pass">סיסמה</label>
+        <input type="password" id="pass" autocomplete="current-password" required>
+        <button class="btn" type="submit">כניסה</button>
+        <span class="err" id="gate-err" hidden>סיסמה שגויה</span>
+      </form>
+    </section>
+    <section class="panel" id="app" hidden>
+      <p class="hint">המספרים נמשכים מאקרוניס כל 6 שעות. המחיר הוא לפי המחירון של אגוז, כולל ₪0.30 ל-GB אחסון ענן.</p>
       <input type="search" id="q" placeholder="חיפוש לקוח…" autocomplete="off">
       <div class="wrap" id="wrap"><div class="empty">טוען לקוחות מאקרוניס…</div></div>
     </section>
@@ -209,25 +220,45 @@
       });
     }
 
-    async function load(refresh) {
+    function b64(s) { return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }
+
+    async function unlock(password) {
+      el("gate-err").hidden = true;
       el("meta").textContent = "טוען…";
-      el("wrap").innerHTML = '<div class="empty">טוען לקוחות מאקרוניס…</div>';
-      const res = await fetch("data.json" + (refresh ? "?t=" + Date.now() : ""), { cache: "no-store" });
-      if (!res.ok) {
-        const msg = await res.text();
-        el("meta").textContent = "שגיאה";
-        el("wrap").innerHTML = `<div class="empty">${esc(msg)}</div>`;
+      const res = await fetch("data.json?t=" + Date.now(), { cache: "no-store" });
+      if (!res.ok) { el("meta").textContent = "שגיאה"; return; }
+      const box = await res.json();
+      const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+      const key = await crypto.subtle.deriveKey(
+        { name: "PBKDF2", salt: b64(box.salt), iterations: box.iters || 100000, hash: "SHA-256" },
+        base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+      let json;
+      try {
+        const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(box.iv) }, key, b64(box.data));
+        json = JSON.parse(new TextDecoder().decode(plain));
+      } catch (e) {
+        el("meta").textContent = "";
+        el("gate-err").hidden = false;
         return;
       }
-      const data = await res.json();
-      rows = data.customers || [];
-      el("meta").textContent = "עודכן " + (data.fetched_at || "");
+      try { sessionStorage.setItem("acronis-site-pass", password); } catch (e) {}
+      el("gate").hidden = true;
+      el("app").hidden = false;
+      rows = json.customers || [];
+      el("meta").textContent = "עודכן " + (json.fetched_at || "");
       render();
     }
 
     el("q").oninput = render;
-    el("refresh").onclick = () => load(true);
-    load(false);
+    el("refresh").onclick = () => {
+      const saved = sessionStorage.getItem("acronis-site-pass");
+      if (saved) unlock(saved);
+    };
+    el("gate-form").onsubmit = (e) => { e.preventDefault(); unlock(el("pass").value); };
+    try {
+      const saved = sessionStorage.getItem("acronis-site-pass");
+      if (saved) unlock(saved);
+    } catch (e) {}
   </script>
 </body>
 </html>
