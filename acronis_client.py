@@ -5,6 +5,7 @@ import base64
 import os
 import time
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import requests
 
@@ -74,7 +75,7 @@ def _load() -> dict:
         rows.append(row)
     rows.sort(key=lambda r: (-r["price"], r["name"]))
     return {
-        "fetched_at": datetime.now().strftime("%d.%m.%Y %H:%M"),
+        "fetched_at": datetime.now(ZoneInfo("Asia/Jerusalem")).strftime("%d.%m.%Y %H:%M"),
         "customers": rows,
     }
 
