@@ -1,4 +1,5 @@
 name: Publish site
+# Builds the public site from Acronis. Secrets stay in GitHub Actions, not in the repo.
 
 on:
   push:
