@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>אקרוניס | אגוז מערכות</title>
+  <style>
+    :root {
+      --bg:#0c1424; --card:#152033; --txt:#e7eef8; --muted:#93a4bd;
+      --line:#4a6282; --split:#9eb2cc; --head:#1b2a42; --band:#243656;
+      --hover:#1c2d48; --detail:#10192a; --ok:#34d399; --input:#0e1828;
+      --shadow:0 10px 28px rgba(0,0,0,.28);
+    }
+    :root[data-theme="light"] {
+      --bg:#e7edf5; --card:#ffffff; --txt:#172842; --muted:#52637c;
+      --line:#7d93b0; --split:#3e5878; --head:#f3f6fb; --band:#e3edf8;
+      --hover:#eef3f9; --detail:#f7f9fc; --ok:#047857; --input:#ffffff;
+      --shadow:0 8px 24px rgba(23,40,66,.08);
+    }
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) {
+        --bg:#e7edf5; --card:#ffffff; --txt:#172842; --muted:#52637c;
+        --line:#7d93b0; --split:#3e5878; --head:#f3f6fb; --band:#e3edf8;
+        --hover:#eef3f9; --detail:#f7f9fc; --ok:#047857; --input:#ffffff;
+        --shadow:0 8px 24px rgba(23,40,66,.08);
+      }
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--txt);
+      font-family:system-ui,"Segoe UI",Arial,sans-serif; line-height:1.5; }
+    header { background:var(--card); border-bottom:1px solid var(--split); position:sticky; top:0; z-index:20; }
+    .hwrap { max-width:1440px; margin:0 auto; padding:14px 22px;
+      display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+    .brand { display:flex; align-items:center; gap:14px; }
+    .brand img { height:36px; width:auto; }
+    .brand img.logo-light { display:none; } .brand img.logo-dark { display:block; }
+    :root[data-theme="light"] .brand img.logo-light { display:block; }
+    :root[data-theme="light"] .brand img.logo-dark { display:none; }
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) .brand img.logo-light { display:block; }
+      :root:not([data-theme="dark"]) .brand img.logo-dark { display:none; }
+    }
+    .brand h1 { font-size:18px; margin:0; font-weight:700; }
+    .brand p { font-size:13px; margin:2px 0 0; color:var(--muted); }
+    .controls { display:flex; align-items:center; gap:10px; }
+    .meta { font-size:13px; color:var(--muted); }
+    .btn { background:var(--card); color:var(--txt); border:1px solid var(--split);
+      border-radius:8px; padding:8px 12px; font-size:14px; cursor:pointer; }
+    .btn:hover { background:var(--hover); }
+    .btn:focus-visible { outline:2px solid var(--split); outline-offset:2px; }
+    main { max-width:1440px; margin:0 auto; padding:20px 22px 40px; }
+    .panel { background:var(--card); border:1px solid var(--split); border-radius:14px;
+      padding:16px 18px 8px; box-shadow:var(--shadow); }
+    .hint { color:var(--muted); font-size:13px; margin:0 0 12px; }
+    input[type=search] { width:min(280px,100%); background:var(--input); color:var(--txt);
+      border:1px solid var(--split); border-radius:8px; padding:8px 12px; font:inherit; margin-bottom:12px; }
+    input[type=search]:focus { outline:2px solid var(--split); outline-offset:1px; }
+    .wrap { overflow-x:auto; }
+    table.bill { width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums; }
+    table.bill th, table.bill td { padding:11px 16px; border-bottom:1px solid var(--line);
+      text-align:center; white-space:nowrap; }
+    table.bill th { color:var(--muted); font-weight:650; font-size:12px; background:var(--head);
+      position:sticky; top:0; z-index:2; }
+    table.bill th.grp { color:var(--txt); font-size:14px; background:var(--band); letter-spacing:.2px; }
+    table.bill .col, table.bill .split { border-inline-start:1px solid var(--line); }
+    table.bill .split { border-inline-start:2px solid var(--split); }
+    table.bill td.name, table.bill th.name { text-align:right; position:sticky; right:0; z-index:3; background:var(--card); }
+    table.bill th.name { background:var(--head); z-index:4; }
+    table.bill td.name { font-weight:650; }
+    table.bill td.price, table.bill th.price { background:color-mix(in srgb, var(--ok) 12%, var(--card)); }
+    table.bill th.price { background:color-mix(in srgb, var(--ok) 16%, var(--head)); }
+    table.bill tbody tr:hover td { background:var(--hover); }
+    table.bill tbody tr:hover td.name { background:var(--hover); }
+    table.bill td.dim { color:var(--muted); }
+    table.bill tr.zero td { color:var(--muted); }
+    table.bill tr.detail td, table.bill tr.detail:hover td { background:var(--detail); text-align:right;
+      white-space:normal; padding:6px 12px 16px; }
+    table.bill tfoot td { font-weight:700; background:var(--head); border-top:2px solid var(--split); }
+    .plus { width:28px; height:28px; margin-inline-end:8px; border-radius:8px; border:1px solid var(--split);
+      background:var(--card); color:var(--txt); cursor:pointer; font-size:16px; line-height:1; vertical-align:middle; }
+    .plus:hover { background:var(--hover); }
+    .plus:focus-visible { outline:2px solid var(--split); outline-offset:2px; }
+    .subtbl { width:100%; border-collapse:collapse; margin:4px 0; background:transparent; }
+    .subtbl th, .subtbl td { text-align:right; padding:7px 14px; border:none;
+      border-inline-start:1px solid var(--line); border-bottom:1px solid var(--line);
+      font-weight:500; color:var(--txt); background:transparent; position:static; }
+    .subtbl th:first-child, .subtbl td:first-child { border-inline-start:none; }
+    .subtbl th { color:var(--muted); font-size:12px; background:transparent; }
+    .empty { padding:28px; text-align:center; color:var(--muted); }
+    @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="hwrap">
+      <div class="brand">
+        <img class="logo-dark" src="/static/logo-dark.png" alt="Egoz Systems">
+        <img class="logo-light" src="/static/logo-light.png" alt="Egoz Systems">
+        <div>
+          <h1>אקרוניס</h1>
+          <p>לקוחות, רישיונות, מחיר ואחסון בשימוש</p>
+        </div>
+      </div>
+      <div class="controls">
+        <span class="meta" id="meta">טוען…</span>
+        <button class="btn" id="refresh" type="button" title="רענון">↻</button>
+        <button class="btn" id="theme" type="button" title="מצב בהיר או כהה">◐</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <p class="hint">השימוש באקרוניס מתעדכן אצלם כל כמה שעות. המחיר הוא לפי המחירון של אגוז, כולל ₪0.30 ל-GB אחסון ענן.</p>
+      <input type="search" id="q" placeholder="חיפוש לקוח…" autocomplete="off">
+      <div class="wrap" id="wrap"><div class="empty">טוען לקוחות מאקרוניס…</div></div>
+    </section>
+  </main>
+
+  <script>
+    function el(id){ return document.getElementById(id); }
+    function esc(s){ return (s ?? "").toString().replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+    (function(){ try { const t = localStorage.getItem("acronis-theme"); if (t) document.documentElement.dataset.theme = t; } catch(e){} })();
+    document.addEventListener("DOMContentLoaded", () => {
+      const b = el("theme");
+      if (!b) return;
+      b.onclick = () => {
+        const cur = document.documentElement.dataset.theme
+          || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+        const next = cur === "dark" ? "light" : "dark";
+        document.documentElement.dataset.theme = next;
+        try { localStorage.setItem("acronis-theme", next); } catch(e){}
+      };
+    });
+
+    const KEYS = ["servers", "vms", "workstations", "edr", "m365", "email"];
+    const HEADS = ["שרת", "VM", "תחנה", "EDR", "M365", "דואר"];
+    let rows = [];
+
+    const ltr = s => `<span dir="ltr">${s}</span>`;
+    const money = n => ltr("₪" + Number(n || 0).toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    function storage(bytes) {
+      if (!bytes) return "—";
+      const gb = bytes / 1024 ** 3;
+      const text = gb >= 1024
+        ? (gb / 1024).toLocaleString("he-IL", { maximumFractionDigits: 2 }) + " TB"
+        : gb.toLocaleString("he-IL", { maximumFractionDigits: gb < 10 ? 2 : 1 }) + " GB";
+      return ltr(text);
+    }
+
+    function render() {
+      const q = (el("q").value || "").trim();
+      const list = rows.filter(r => !q || r.name.includes(q));
+      if (!list.length) { el("wrap").innerHTML = '<div class="empty">אין לקוחות להצגה.</div>'; return; }
+      const head = HEADS.map((h, n) => `<th class="${n ? "col" : "split"}">${h}</th>`).join("");
+      const body = list.map((r, i) => {
+        const counts = KEYS.map((k, n) => {
+          const qty = r.counts[k] || 0;
+          return `<td class="${n ? "col" : "split"}${qty ? "" : " dim"}">${qty}</td>`;
+        }).join("");
+        const lines = r.lines.map(l => `<tr>
+          <td>${esc(l.name)}</td>
+          <td>${l.qty == null ? "—" : l.qty}</td>
+          <td>${storage(l.storage_bytes)}</td>
+          <td>${l.key === "storage" ? ltr("₪0.30 / GB") : (l.unit ? money(l.unit) : "—")}</td>
+          <td>${money(l.price)}</td>
+        </tr>`).join("");
+        return `<tr class="${r.price ? "" : "zero"}">
+          <td class="name"><button class="plus" type="button" data-i="${i}" aria-label="פירוט">+</button>${esc(r.name)}</td>
+          ${counts}
+          <td class="money split price">${money(r.price)}</td>
+          <td class="split">${storage(r.storage_bytes)}</td>
+        </tr>
+        <tr class="detail" id="d-${i}" hidden><td colspan="9">
+          <table class="subtbl">
+            <thead><tr><th>מוצר</th><th>כמות</th><th>אחסון</th><th>מחיר יחידה</th><th>סה״כ</th></tr></thead>
+            <tbody>${lines}</tbody>
+          </table>
+        </td></tr>`;
+      }).join("");
+      const tot = KEYS.map(k => list.reduce((s, r) => s + (r.counts[k] || 0), 0));
+      const price = list.reduce((s, r) => s + r.price, 0);
+      const bytes = list.reduce((s, r) => s + r.storage_bytes, 0);
+      el("wrap").innerHTML = `<table class="bill">
+        <thead>
+          <tr>
+            <th class="name" rowspan="2">לקוח</th>
+            <th class="grp split" colspan="6">מוצר</th>
+            <th class="split price" rowspan="2">מחיר</th>
+            <th class="split" rowspan="2">אחסון</th>
+          </tr>
+          <tr>${head}</tr>
+        </thead>
+        <tbody>${body}</tbody>
+        <tfoot><tr>
+          <td class="name">סה״כ (${list.length})</td>
+          ${tot.map((n, i) => `<td class="${i ? "col" : "split"}">${n}</td>`).join("")}
+          <td class="money split price">${money(price)}</td>
+          <td class="split">${storage(bytes)}</td>
+        </tr></tfoot>
+      </table>`;
+      el("wrap").querySelectorAll(".plus").forEach(btn => {
+        btn.onclick = () => {
+          const row = el("d-" + btn.dataset.i);
+          const open = row.hidden;
+          row.hidden = !open;
+          btn.textContent = open ? "−" : "+";
+        };
+      });
+    }
+
+    async function load(refresh) {
+      el("meta").textContent = "טוען…";
+      el("wrap").innerHTML = '<div class="empty">טוען לקוחות מאקרוניס…</div>';
+      const res = await fetch("/api/acronis" + (refresh ? "?refresh=true" : ""));
+      if (!res.ok) {
+        const msg = await res.text();
+        el("meta").textContent = "שגיאה";
+        el("wrap").innerHTML = `<div class="empty">${esc(msg)}</div>`;
+        return;
+      }
+      const data = await res.json();
+      rows = data.customers || [];
+      el("meta").textContent = "עודכן " + (data.fetched_at || "");
+      render();
+    }
+
+    el("q").oninput = render;
+    el("refresh").onclick = () => load(true);
+    load(false);
+  </script>
+</body>
+</html>
